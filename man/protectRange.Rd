@@ -21,14 +21,16 @@ a random range name is created.}
 \description{
 Protect a range from modifications in the gui. Additionally, this allows a range to be unlocked
 and edited separately from the worksheet when the worksheet is locked. This is
-only enforced on a Windows version of Excel.
+only fully enforced on a Windows version of Excel.
 }
 \details{
-This function does not work with Mac versions of Excel because there is no
+The password piece of this function does not work with Mac versions of Excel because there is no
 concept of protected ranges there. That being said, you can create protected
-ranges using `openxlsx` on a Mac, and then open them in Windows and the protection
-will be enforced. Excel files with protected ranges open without error on Mac, but
-do not enforce the protection.
+ranges _without a password_, protect the worksheet, and then open the workbook
+on a Mac, and you will be able to edit those ranges but not the rest of the 
+sheet. Excel files with password protected ranges open without error on Mac, but
+you will likely get an error if you try to edit them, rather than it asking
+for a password.
 
 Multiple ranges can be created with multiple calls to 
 \code{protectRange()}.
