@@ -126,6 +126,7 @@ WorkSheet <- setRefClass("WorkSheet",
                                     "hyperlinks" = "ANY",
                                     
                                     "sheetProtection" = "character",
+                                    "protectedRanges" = "character",
                                     "pageMargins" = "character",
                                     "pageSetup" = "character",
                                     "headerFooter" = "ANY",

@@ -2178,7 +2178,130 @@ protectWorkbook <- function(wb, protect = TRUE, password = NULL, lockStructure =
 }
 
 
-
+#' @name protectRange
+#' @title Protect a range from modifications
+#' @description Protect a range from modifications in the gui. Additionally, this allows a range to be unlocked
+#' and edited separately from the worksheet when the worksheet is locked. This is
+#' only enforced on a Windows version of Excel.
+#'
+#' @param wb A workbook object
+#' @param sheet A worksheet where the range is located.
+#' @param range A reference to the range to protect (example: \code{"A1:C3"}).
+#' @param password An optional password to protect the range with.
+#' @param name An optional name to give to the protected range. If none is given,
+#' a random range name is created.
+#' 
+#' @details 
+#' 
+#' This function does not work with Mac versions of Excel because there is no
+#' concept of protected ranges there. That being said, you can create protected
+#' ranges using `openxlsx` on a Mac, and then open them in Windows and the protection
+#' will be enforced. Excel files with protected ranges open without error on Mac, but
+#' do not enforce the protection.
+#' 
+#' Multiple ranges can be created with multiple calls to 
+#' \code{protectRange()}.
+#' 
+#' While generally not useful, overlapping protected ranges are allowed
+#' and are meaningful. Consider the case of protecting \code{"A1:C3"} with 
+#' the password \code{"p1"}, and protecting \code{"A2:C3"} with the password
+#' \code{"p2"}. The following situations could arise:
+#' 
+#' \itemize{
+#' \item{}{Clicking in \code{"A1"} and entering \code{"p1"} will unlock all of \code{"A1:C3"}.}
+#' \item{}{Clicking in \code{"A2"} and entering \code{"p1"} will unlock all of \code{"A1:C3"}.}
+#' \item{}{Clicking in \code{"A2"} and entering \code{"p2"} will unlock all of \code{"A2:C3"}.
+#' In this case, \code{"A1:C1"} will still be locked, and requires the password \code{"p1"} to unlock.} 
+#' }
+#'
+#' @export
+#' 
+#' @examples
+#' 
+#' # Create a workbook where range A1:C3 is password protected
+#' # and the rest of the workbook is locked down and unaccessable
+#' wb <- createWorkbook()
+#' addWorksheet(wb, "S1")
+#' protectRange(wb, "S1", range = "A1:C3", password = "password", name = "myrange")
+#' protectWorksheet(wb, "S1")
+#' saveWorkbook(wb, "Workbook_With_Range_Protection.xlsx")
+#'
+#' # A password is not required, and if no name is supplied, 
+#' # a random name is created 
+#' wb <- createWorkbook()
+#' addWorksheet(wb, "S1")
+#' protectRange(wb, "S1", range = "A1:C3")
+#' protectWorksheet(wb, "S1")
+#' saveWorkbook(wb, "Workbook_With_Range_Protection_But_No_Password.xlsx")
+#'
+#' # You can create a protected range without protecting the worksheet,
+#' # but the protection will NOT be enforced until you protect the worksheet
+#' # from within Excel
+#' wb <- createWorkbook()
+#' addWorksheet(wb, "S1")
+#' protectRange(wb, "S1", range = "A1:C3", password = "password")
+#' saveWorkbook(wb, "Workbook_With_Unactivated_Range_Protection.xlsx")
+#'
+protectRange <- function(wb, sheet, range, password = NULL, name = NULL) {
+  
+  if (!"Workbook" %in% class(wb)) {
+    stop("First argument must be a Workbook.")
+  }
+  
+  if(!is.character(range)) {
+    stop("The `range` must be a character.")
+  }
+  
+  sheet <- wb$validateSheet(sheet)
+  xml <- wb$worksheets[[sheet]]$protectedRanges
+  
+  props = c()
+  
+  if(!missing(password) && !is.null(password)) {
+    props["password"] = hashPassword(password)
+  }
+  
+  props["sqref"] <- range
+  
+  if(!missing(name) && !is.null(name)) {
+    props["name"] = name
+  } else {
+    # Random name
+    props["name"] = paste0(sample(letters, 10, TRUE), collapse = "")
+  }
+  
+  protected_range <- sprintf(
+    '<protectedRange %s/>',
+    paste(names(props), paste0('"', props, '"'), collapse = " ", sep = "=")
+  )
+  
+  # Existing protectedRanges
+  if(length(xml) > 0) {
+    
+    protected_ranges <- unlist(strsplit(xml, "</protectedRanges>"))
+    
+    wb$worksheets[[sheet]]$protectedRanges <- paste(
+      protected_ranges, 
+      protected_range, 
+      "</protectedRanges>", 
+      collapse = "", 
+      sep = ""
+    )
+    
+    # New protectedRanges
+  } else {
+    
+    wb$worksheets[[sheet]]$protectedRanges <- paste(
+      "<protectedRanges>", 
+      protected_range, 
+      "</protectedRanges>", 
+      collapse = "", 
+      sep = ""
+    )
+    
+  }
+  
+}
 
 
 #' @name showGridLines
